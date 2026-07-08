@@ -1,0 +1,29 @@
+name: custom_customer_demo
+version: "1.0.0"
+config-version: 2
+
+profile: custom_customer_demo
+
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+seed-paths: ["seeds"]
+analysis-paths: ["analyses"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  custom_customer_demo:
+    +materialized: view
+    staging:
+      +materialized: view
+    marts:
+      intermediate:
+        +materialized: view
+      core:
+        +materialized: table
+      aggregates:
+        +materialized: table

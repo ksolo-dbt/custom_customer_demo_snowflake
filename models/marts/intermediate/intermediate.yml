@@ -1,0 +1,29 @@
+---
+version: 2
+models:
+- name: int_lifestance_outcome_measures
+  description: |
+    Normalized LifeStance PHQ-9 and GAD-7 outcome measures from the PHR and Patient Portal feeds.
+    One row per patient, measure type, and measure date after same-day duplicate submissions are reconciled.
+  columns:
+  - name: patient_key
+    description: Patient identifier built from AMD patient_fid and licensekey.
+    data_tests:
+    - not_null
+  - name: measure_type
+    description: Outcome instrument, either phq9 or gad7.
+    data_tests:
+    - not_null
+    - accepted_values:
+        arguments:
+          values:
+          - phq9
+          - gad7
+  - name: measure_date
+    description: Date the outcome measure was administered.
+    data_tests:
+    - not_null
+  - name: score
+    description: Cleaned numeric outcome score.
+  - name: measure_visit_number
+    description: Visit number assigned from the patient's latest episode-of-care timeline.
