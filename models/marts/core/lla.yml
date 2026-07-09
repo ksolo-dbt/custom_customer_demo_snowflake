@@ -1,23 +1,51 @@
 version: 2
 
 models:
+  - name: time_spine_daily
+    description: Daily time spine used by MetricFlow for LLA Semantic Layer time aggregations.
+    time_spine:
+      standard_granularity_column: date_day
+    columns:
+      - name: date_day
+        description: Calendar date for daily metric aggregation.
+        granularity: day
+
   - name: fct_lla_fleet_timeline
     description: Multi-lane Always-On event timeline for the LLA demo, unioning broadband, uptime, fixed traffic, mobile CDR, reboot, signal-quality, and DNA-change events.
+    semantic_model:
+      enabled: true
+    agg_time_dimension: event_time
+    derived_semantics:
+      entities:
+        - name: fleet_event
+          type: primary
+          expr: account_id || '-' || cm_mac || '-' || lane || '-' || to_varchar(event_time)
     columns:
       - name: account_id
         description: Customer account identifier.
+        entity:
+          type: foreign
+          name: account
         data_tests:
           - not_null
       - name: cm_mac
         description: Cable modem MAC address.
+        entity:
+          type: foreign
+          name: device
         data_tests:
           - not_null
       - name: event_time
         description: Timestamp for the event in its native lane grain.
+        granularity: day
+        dimension:
+          type: time
         data_tests:
           - not_null
       - name: lane
         description: Event lane represented by the row.
+        dimension:
+          type: categorical
         data_tests:
           - accepted_values:
               arguments:
@@ -29,19 +57,178 @@ models:
                   - reboots
                   - signal_quality
                   - dna_changes
+      - name: manufacturer
+        description: Always-On device manufacturer.
+        dimension:
+          type: categorical
+      - name: device_model
+        description: Always-On device model.
+        dimension:
+          type: categorical
+      - name: mobile_network_type
+        description: Radio access type observed for mobile CDR events.
+        dimension:
+          type: categorical
+      - name: reboot_type
+        description: Reboot reason reported by the Plume platform.
+        dimension:
+          type: categorical
+      - name: dna_change_type
+        description: DNA service attribute that changed on a DNA-change event.
+        dimension:
+          type: categorical
+    metrics:
+      - name: fleet_timeline_events
+        description: Count of normalized Always-On timeline events across all lanes.
+        type: simple
+        label: Fleet Timeline Events
+        agg: count
+        expr: 1
 
   - name: fct_lla_fleet_summary
     description: Daily per-device Always-On summary for the LLA demo dashboard.
+    semantic_model:
+      enabled: true
+    agg_time_dimension: dt
+    derived_semantics:
+      entities:
+        - name: device_day
+          type: primary
+          expr: account_id || '-' || cm_mac || '-' || to_varchar(dt)
     columns:
       - name: account_id
         description: Customer account identifier.
+        entity:
+          type: foreign
+          name: account
         data_tests:
           - not_null
       - name: cm_mac
         description: Cable modem MAC address.
+        entity:
+          type: foreign
+          name: device
         data_tests:
           - not_null
       - name: dt
         description: Summary date.
+        granularity: day
+        dimension:
+          type: time
         data_tests:
           - not_null
+      - name: manufacturer
+        description: Always-On device manufacturer.
+        dimension:
+          type: categorical
+      - name: device_model
+        description: Always-On device model.
+        dimension:
+          type: categorical
+      - name: country
+        description: Country where the Always-On service is deployed.
+        dimension:
+          type: categorical
+      - name: bb_plan_nm
+        description: Broadband plan name on the daily device summary.
+        dimension:
+          type: categorical
+      - name: ao_plan_nm
+        description: Always-On plan name on the daily device summary.
+        dimension:
+          type: categorical
+    metrics:
+      - name: devices_monitored
+        description: Count of distinct Always-On devices represented in the daily fleet summary.
+        type: simple
+        label: Devices Monitored
+        agg: count_distinct
+        expr: cm_mac
+      - name: broadband_hours_online
+        description: Total estimated hours when broadband was online.
+        type: simple
+        label: Broadband Hours Online
+        agg: sum
+        expr: bb_hours_online
+      - name: broadband_hours_offline
+        description: Total estimated hours when broadband was offline.
+        type: simple
+        label: Broadband Hours Offline
+        agg: sum
+        expr: bb_hours_offline
+      - name: broadband_interruptions
+        description: Count of broadband offline interruption segments.
+        type: simple
+        label: Broadband Interruptions
+        agg: sum
+        expr: bb_interrupts
+      - name: average_broadband_online_rate
+        description: Average daily broadband online rate across device-days.
+        type: simple
+        label: Average Broadband Online Rate
+        agg: average
+        expr: bb_pct_online
+      - name: cm_reboot_count
+        description: Count of cable modem reboot events detected from uptime resets.
+        type: simple
+        label: CM Reboot Count
+        agg: sum
+        expr: cm_reboots
+      - name: plume_reboot_count
+        description: Count of Plume reboot events reported for managed nodes.
+        type: simple
+        label: Plume Reboot Count
+        agg: sum
+        expr: plume_reboots
+      - name: mobile_session_count
+        description: Count of mobile backup data sessions.
+        type: simple
+        label: Mobile Session Count
+        agg: sum
+        expr: mobile_sessions
+      - name: mobile_download_mb
+        description: Total mobile downstream traffic volume in megabytes.
+        type: simple
+        label: Mobile Download MB
+        agg: sum
+        expr: mobile_dl_mb
+      - name: mobile_upload_mb
+        description: Total mobile upstream traffic volume in megabytes.
+        type: simple
+        label: Mobile Upload MB
+        agg: sum
+        expr: mobile_ul_mb
+      - name: fixed_download_kb
+        description: Total fixed broadband downstream traffic volume in kilobytes.
+        type: simple
+        label: Fixed Download KB
+        agg: sum
+        expr: fixed_kb_down
+      - name: fixed_upload_kb
+        description: Total fixed broadband upstream traffic volume in kilobytes.
+        type: simple
+        label: Fixed Upload KB
+        agg: sum
+        expr: fixed_kb_up
+      - name: average_signal_snr_down_db
+        description: Average downstream signal-to-noise ratio in dB.
+        type: simple
+        label: Average Downstream SNR
+        agg: average
+        expr: signal_avg_snr_down_db
+      - name: dna_change_count
+        description: Count of day-over-day DNA plan or service-status changes.
+        type: simple
+        label: DNA Change Count
+        agg: sum
+        expr: dna_changes
+      - name: total_reboot_count
+        description: Combined reboot count from CM uptime resets and Plume reboot events.
+        type: derived
+        label: Total Reboot Count
+        expr: cm_reboots + plume_reboots
+        input_metrics:
+          - name: cm_reboot_count
+            alias: cm_reboots
+          - name: plume_reboot_count
+            alias: plume_reboots

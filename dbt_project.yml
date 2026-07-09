@@ -1,8 +1,12 @@
-name: custom_customer_demo
+name: custom_customer_demo_snowflake
 version: "1.0.0"
 config-version: 2
 
-profile: custom_customer_demo
+profile: custom_customer_demo_snowflake
+
+dbt-cloud:
+  project-id: 558500
+  defer-env-id: 465571
 
 model-paths: ["models"]
 test-paths: ["tests"]
@@ -14,16 +18,3 @@ analysis-paths: ["analyses"]
 clean-targets:
   - "target"
   - "dbt_packages"
-
-models:
-  custom_customer_demo:
-    +materialized: view
-    staging:
-      +materialized: view
-    marts:
-      intermediate:
-        +materialized: view
-      core:
-        +materialized: table
-      aggregates:
-        +materialized: table
