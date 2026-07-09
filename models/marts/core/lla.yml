@@ -1,0 +1,47 @@
+version: 2
+
+models:
+  - name: fct_lla_fleet_timeline
+    description: Multi-lane Always-On event timeline for the LLA demo, unioning broadband, uptime, fixed traffic, mobile CDR, reboot, signal-quality, and DNA-change events.
+    columns:
+      - name: account_id
+        description: Customer account identifier.
+        data_tests:
+          - not_null
+      - name: cm_mac
+        description: Cable modem MAC address.
+        data_tests:
+          - not_null
+      - name: event_time
+        description: Timestamp for the event in its native lane grain.
+        data_tests:
+          - not_null
+      - name: lane
+        description: Event lane represented by the row.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - broadband
+                  - cm_uptime
+                  - fixed_traffic
+                  - mobile_cdr
+                  - reboots
+                  - signal_quality
+                  - dna_changes
+
+  - name: fct_lla_fleet_summary
+    description: Daily per-device Always-On summary for the LLA demo dashboard.
+    columns:
+      - name: account_id
+        description: Customer account identifier.
+        data_tests:
+          - not_null
+      - name: cm_mac
+        description: Cable modem MAC address.
+        data_tests:
+          - not_null
+      - name: dt
+        description: Summary date.
+        data_tests:
+          - not_null

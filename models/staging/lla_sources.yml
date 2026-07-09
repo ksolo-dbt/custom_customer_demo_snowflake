@@ -1,0 +1,252 @@
+version: 2
+
+sources:
+  - name: lla_raw
+    description: |
+      Raw and reference data for the LLA Always-On Customer WiFi Product demo.
+      The six operational input tables feed the dbt pipeline; fleet_timeline and
+      fleet_summary are reference output tables used for documentation and shape checks.
+    database: analytics
+    schema: ksalomon_lla_demo_raw_data
+    tables:
+      - name: cm_status_facts
+        identifier: CM_STATUS_FACTS
+        description: Cable modem online/offline status polls every 15 minutes.
+        columns:
+          - name: mac_address
+            description: Cable modem MAC address used to join the modem to the demo fleet.
+            quote: true
+            data_tests:
+              - not_null
+          - name: poll_time
+            description: Timestamp when the cable modem status was polled.
+            quote: true
+            data_tests:
+              - not_null
+          - name: cm_status
+            description: Online/offline status observed for the cable modem.
+            quote: true
+            data_tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: ["online", "offline"]
+          - name: ip_address
+            description: IP address assigned to the cable modem at poll time.
+            quote: true
+          - name: cmts_name
+            description: CMTS node serving the cable modem.
+            quote: true
+          - name: upstream_port
+            description: Upstream port identifier on the CMTS.
+            quote: true
+          - name: downstream_port
+            description: Downstream port identifier on the CMTS.
+            quote: true
+          - name: dt
+            description: Partition date for the status poll.
+            quote: true
+
+      - name: cm_rf_facts
+        identifier: CM_RF_FACTS
+        description: Hourly cable modem RF signal metrics and uptime counters from the CMTS.
+        columns:
+          - name: mac_address
+            description: Cable modem MAC address.
+            quote: true
+            data_tests:
+              - not_null
+          - name: poll_time
+            description: Timestamp when RF metrics were polled.
+            quote: true
+            data_tests:
+              - not_null
+          - name: ds_snr_db
+            description: Downstream signal-to-noise ratio in dB.
+            quote: true
+          - name: ds_power_dbmv
+            description: Downstream power level in dBmV.
+            quote: true
+          - name: us_snr_db
+            description: Upstream signal-to-noise ratio in dB.
+            quote: true
+          - name: us_power_dbmv
+            description: Upstream power level in dBmV.
+            quote: true
+          - name: uptime_seconds
+            description: Cumulative modem uptime counter in seconds.
+            quote: true
+          - name: t3_timeouts
+            description: Count of T3 timeout events.
+            quote: true
+          - name: t4_timeouts
+            description: Count of T4 timeout events.
+            quote: true
+          - name: cmts_name
+            description: CMTS node serving the cable modem.
+            quote: true
+          - name: dt
+            description: Partition date for the RF poll.
+            quote: true
+
+      - name: cm_data_day_facts
+        identifier: CM_DATA_DAY_FACTS
+        description: Daily broadband traffic and speed aggregates per cable modem.
+        columns:
+          - name: mac_address
+            description: Cable modem MAC address.
+            quote: true
+            data_tests:
+              - not_null
+          - name: date_key
+            description: Calendar date represented by the daily traffic aggregate.
+            quote: true
+            data_tests:
+              - not_null
+          - name: total_bytes_down_kb
+            description: Total downstream fixed broadband volume in KB.
+            quote: true
+          - name: total_bytes_up_kb
+            description: Total upstream fixed broadband volume in KB.
+            quote: true
+          - name: avg_speed_down_kbps
+            description: Average downstream fixed broadband speed in kbps.
+            quote: true
+          - name: avg_speed_up_kbps
+            description: Average upstream fixed broadband speed in kbps.
+            quote: true
+          - name: peak_speed_down_kbps
+            description: Peak downstream fixed broadband speed in kbps.
+            quote: true
+          - name: peak_speed_up_kbps
+            description: Peak upstream fixed broadband speed in kbps.
+            quote: true
+          - name: dt
+            description: Partition date for the daily traffic aggregate.
+            quote: true
+
+      - name: plume_reboot_fact
+        identifier: PLUME_REBOOT_FACT
+        description: Reboot events captured by the Plume platform for managed nodes.
+        columns:
+          - name: node_mac
+            description: Plume node MAC address used to join reboot events to the demo fleet.
+            quote: true
+            data_tests:
+              - not_null
+          - name: reboot_time
+            description: Timestamp when the node reboot occurred.
+            quote: true
+            data_tests:
+              - not_null
+          - name: reboot_reason
+            description: Reason reported for the reboot event.
+            quote: true
+          - name: firmware_version
+            description: Firmware version observed after reboot.
+            quote: true
+          - name: location_id
+            description: Plume location identifier.
+            quote: true
+          - name: dt
+            description: Partition date for the reboot event.
+            quote: true
+
+      - name: mobile_data_xdr
+        identifier: MOBILE_DATA_XDR
+        description: Mobile packet gateway data sessions for Always-On dongles.
+        columns:
+          - name: served_imeisv
+            description: Device IMEI or IMEISV observed on the mobile data session.
+            quote: true
+            data_tests:
+              - not_null
+          - name: served_msisdn
+            description: SIM phone number observed on the mobile data session.
+            quote: true
+            data_tests:
+              - not_null
+          - name: start_time
+            description: Session start timestamp encoded as YYMMDDHH24MISS.
+            quote: true
+            data_tests:
+              - not_null
+          - name: end_time
+            description: Session end timestamp encoded as YYMMDDHH24MISS.
+            quote: true
+          - name: duration_seconds
+            description: Session duration in seconds.
+            quote: true
+          - name: volume_uplink_bytes
+            description: Mobile upload volume in bytes.
+            quote: true
+          - name: volume_downlink_bytes
+            description: Mobile download volume in bytes.
+            quote: true
+          - name: rat_type
+            description: Radio access type for the mobile session.
+            quote: true
+          - name: cell_id
+            description: Serving mobile cell identifier.
+            quote: true
+          - name: apn
+            description: Access point name used by the mobile session.
+            quote: true
+          - name: dt
+            description: Partition date for the mobile session.
+            quote: true
+
+      - name: dna_conv_service
+        identifier: DNA_CONV_SERVICE
+        description: DNA convergent service records linking accounts, plans, and Always-On dongle identifiers.
+        columns:
+          - name: account_id
+            description: Customer account identifier.
+            quote: true
+            data_tests:
+              - not_null
+          - name: customer_name
+            description: Customer name on the service account.
+            quote: true
+          - name: srv_serv_type
+            description: Service type for the customer service instance.
+            quote: true
+          - name: pd_bb_prod_nm
+            description: Broadband product or plan name.
+            quote: true
+          - name: imsi
+            description: SIM IMSI associated with the Always-On dongle.
+            quote: true
+          - name: imei
+            description: Device IMEI associated with the Always-On dongle.
+            quote: true
+            data_tests:
+              - not_null
+          - name: msisdn
+            description: SIM phone number associated with the Always-On dongle.
+            quote: true
+            data_tests:
+              - not_null
+          - name: nr_manufacturer_id
+            description: Device manufacturer.
+            quote: true
+          - name: nr_device_model_name_sale
+            description: Device model sold to the customer.
+            quote: true
+          - name: srv_status
+            description: Current service status.
+            quote: true
+          - name: country
+            description: Country of deployment.
+            quote: true
+          - name: dt
+            description: Partition date for the service record.
+            quote: true
+
+      - name: fleet_timeline
+        identifier: FLEET_TIMELINE
+        description: Reference dashboard timeline output used to document the target event shape.
+
+      - name: fleet_summary
+        identifier: FLEET_SUMMARY
+        description: Reference dashboard summary output used to document the target daily rollup shape.

@@ -1,0 +1,26 @@
+version: 2
+
+seeds:
+  - name: lla_device_map
+    description: Deterministic bridge for the LLA synthetic demo devices, mapping DNA/mobile identifiers to cable modem MAC addresses.
+    columns:
+      - name: account_id
+        description: Customer account identifier from DNA.
+        data_tests:
+          - unique
+          - not_null
+      - name: cm_mac
+        description: Cable modem MAC address used by CM and Plume sources.
+        data_tests:
+          - unique
+          - not_null
+      - name: imei
+        description: Always-On dongle IMEI.
+        data_tests:
+          - unique
+          - not_null
+      - name: msisdn
+        description: SIM phone number for the Always-On dongle.
+        data_tests:
+          - unique
+          - not_null

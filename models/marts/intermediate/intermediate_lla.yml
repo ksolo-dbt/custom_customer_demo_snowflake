@@ -1,0 +1,53 @@
+version: 2
+
+models:
+  - name: int_lla_fleet_base
+    description: Enriched Always-On fleet roster joined from DNA service records and the deterministic demo device map.
+    columns:
+      - name: account_id
+        description: Customer account identifier.
+        data_tests:
+          - not_null
+      - name: cm_mac
+        description: Cable modem MAC address for CM and Plume joins.
+        data_tests:
+          - not_null
+      - name: imei
+        description: Always-On dongle IMEI.
+        data_tests:
+          - not_null
+
+  - name: int_lla_fleet_discovery
+    description: Latest active Always-On fleet row per account.
+    columns:
+      - name: account_id
+        description: Customer account identifier.
+        data_tests:
+          - unique
+          - not_null
+      - name: cm_mac
+        description: Cable modem MAC address.
+        data_tests:
+          - unique
+          - not_null
+
+  - name: int_lla_lane_broadband
+    description: Broadband status timeline lane from 15-minute cable modem polls.
+
+  - name: int_lla_lane_cm_uptime
+    description: Cable modem uptime and CMTS signal timeline lane from RF facts.
+
+  - name: int_lla_lane_fixed_traffic
+    description: Daily fixed broadband traffic timeline lane.
+
+  - name: int_lla_lane_mobile_cdr
+    description: Mobile data session timeline lane from packet gateway records.
+
+  - name: int_lla_lane_reboots
+    description: Plume reboot event timeline lane.
+
+  - name: int_lla_lane_signal_quality
+    description: Signal-quality timeline lane from cable modem RF facts.
+
+  - name: int_lla_lane_dna_changes
+    description: Day-over-day DNA service change timeline lane.
