@@ -116,7 +116,11 @@ joined as (
         fleet.imei,
         fleet.manufacturer,
         fleet.device_model,
+        fleet.country,
+        fleet.broadband_plan_name as bb_plan_nm,
+        fleet.broadband_plan_name as ao_plan_nm,
         device_dates.dt,
+        signal_daily.signal_avg_power_down_dbmv,
         coalesce(broadband_daily.bb_polls_total, 0) as bb_polls_total,
         coalesce(broadband_daily.bb_polls_online, 0) as bb_polls_online,
         coalesce(broadband_daily.bb_hours_online, 0) as bb_hours_online,
@@ -138,10 +142,7 @@ joined as (
         coalesce(mobile_daily.mobile_ul_mb, 0) as mobile_ul_mb,
         coalesce(plume_daily.plume_reboots, 0) as plume_reboots,
         coalesce(signal_daily.signal_avg_snr_down_db, cm_uptime_daily.cm_snr_avg_down) as signal_avg_snr_down_db,
-        signal_daily.signal_avg_power_down_dbmv,
-        coalesce(dna_daily.dna_changes, 0) as dna_changes,
-        fleet.broadband_plan_name as bb_plan_nm,
-        fleet.broadband_plan_name as ao_plan_nm
+        coalesce(dna_daily.dna_changes, 0) as dna_changes
     from device_dates
     inner join fleet
         on device_dates.account_id = fleet.account_id
