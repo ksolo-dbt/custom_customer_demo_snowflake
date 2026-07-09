@@ -1,0 +1,112 @@
+version: 2
+
+models:
+  - name: stg_lla_cm_status_facts
+    description: Cleaned 15-minute cable modem status polls for the LLA Always-On demo.
+    columns:
+      - name: cm_mac
+        description: Cable modem MAC address.
+        data_tests:
+          - not_null
+      - name: poll_time
+        description: Timestamp when status was polled.
+        data_tests:
+          - not_null
+      - name: cm_status
+        description: Online/offline status of the cable modem.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["online", "offline"]
+
+  - name: stg_lla_cm_rf_facts
+    description: Cleaned hourly cable modem RF metrics and uptime counters.
+    columns:
+      - name: cm_mac
+        description: Cable modem MAC address.
+        data_tests:
+          - not_null
+      - name: poll_time
+        description: Timestamp when RF metrics were polled.
+        data_tests:
+          - not_null
+
+  - name: stg_lla_cm_data_day_facts
+    description: Cleaned daily fixed broadband usage and speed facts.
+    columns:
+      - name: cm_mac
+        description: Cable modem MAC address.
+        data_tests:
+          - not_null
+      - name: date_key
+        description: Date represented by the daily traffic aggregate.
+        data_tests:
+          - not_null
+
+  - name: stg_lla_plume_reboot_fact
+    description: Cleaned Plume reboot events by managed node MAC.
+    columns:
+      - name: cm_mac
+        description: Managed node MAC address.
+        data_tests:
+          - not_null
+      - name: reboot_time
+        description: Timestamp when the reboot occurred.
+        data_tests:
+          - not_null
+
+  - name: stg_lla_mobile_data_xdr
+    description: Cleaned mobile packet gateway sessions for Always-On dongles.
+    columns:
+      - name: imei
+        description: Device IMEI from the mobile session.
+        data_tests:
+          - not_null
+      - name: msisdn
+        description: SIM phone number from the mobile session.
+        data_tests:
+          - not_null
+      - name: start_time
+        description: Parsed mobile session start timestamp.
+        data_tests:
+          - not_null
+
+  - name: stg_lla_dna_conv_service
+    description: Cleaned DNA service records for Always-On fleet discovery.
+    columns:
+      - name: account_id
+        description: Customer account identifier.
+        data_tests:
+          - not_null
+      - name: imei
+        description: Device IMEI from DNA.
+        data_tests:
+          - not_null
+      - name: msisdn
+        description: SIM phone number from DNA.
+        data_tests:
+          - not_null
+
+  - name: stg_lla_device_map
+    description: Deterministic synthetic demo bridge between DNA/mobile identifiers and CM/Plume MAC addresses.
+    columns:
+      - name: account_id
+        description: Customer account identifier.
+        data_tests:
+          - unique
+          - not_null
+      - name: cm_mac
+        description: Cable modem MAC address used by CM and Plume sources.
+        data_tests:
+          - unique
+          - not_null
+      - name: imei
+        description: Always-On dongle IMEI.
+        data_tests:
+          - unique
+          - not_null
+      - name: msisdn
+        description: SIM phone number for the Always-On dongle.
+        data_tests:
+          - unique
+          - not_null
