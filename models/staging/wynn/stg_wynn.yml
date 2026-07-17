@@ -1,0 +1,256 @@
+version: 2
+
+models:
+  - name: stg_wynn_casino_play_sessions_cms
+    description: Cleaned CMS casino play sessions pivoted from vertical field/value rows to one row per player session.
+    columns:
+      - name: entity_id
+        description: Property and source-system entity identifier.
+        data_tests:
+          - not_null
+      - name: casino_player_id
+        description: CMS casino player identifier.
+        data_tests:
+          - not_null
+      - name: casino_player_key
+        description: CMS casino player identifier formatted as text for identity joins.
+        data_tests:
+          - not_null
+      - name: session_id
+        description: CMS play session identifier.
+        data_tests:
+          - not_null
+      - name: gaming_theo_win
+        description: Theoretical win captured for the session.
+      - name: gaming_actual_win
+        description: Actual win captured for the session.
+      - name: avg_bet
+        description: Average bet for the session.
+      - name: time_on_device_min
+        description: Minutes on device or table for the session.
+      - name: game_type
+        description: Game type label as submitted by CMS.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["Baccarat", "Baccarat-Hi", "Blackjack", "Craps", "Poker", "Roulette", "Slots"]
+      - name: session_date
+        description: Calendar date of the play session.
+        data_tests:
+          - not_null
+      - name: first_created_at
+        description: Earliest raw field timestamp represented by the session row.
+      - name: last_created_at
+        description: Latest raw field timestamp represented by the session row.
+
+  - name: stg_wynn_hotel_ancillary_folios_pms
+    description: Cleaned PMS and ancillary folios pivoted from vertical field/value rows to one row per folio reference.
+    columns:
+      - name: entity_id
+        description: Property and source-system entity identifier.
+        data_tests:
+          - not_null
+      - name: pms_guest_id
+        description: Opera PMS guest identifier.
+        data_tests:
+          - not_null
+      - name: folio_id
+        description: PMS folio identifier when present.
+      - name: folio_reference
+        description: Stable folio reference, using the raw folio ID when present and a generated no-folio reference otherwise.
+        data_tests:
+          - not_null
+      - name: room_revenue
+        description: Room revenue on the folio.
+      - name: fnb_revenue
+        description: Food and beverage revenue on the folio.
+      - name: retail_revenue
+        description: Retail revenue on the folio.
+      - name: spa_revenue
+        description: Spa revenue on the folio.
+      - name: show_revenue
+        description: Show or entertainment revenue on the folio.
+      - name: stay_arrival_date
+        description: Arrival date for the hotel stay.
+      - name: stay_nights
+        description: Number of nights represented by the folio.
+      - name: comp_dollars_issued
+        description: Comp dollars issued against the folio.
+      - name: first_created_at
+        description: Earliest raw field timestamp represented by the folio row.
+      - name: last_created_at
+        description: Latest raw field timestamp represented by the folio row.
+
+  - name: stg_wynn_loyalty_identity_crosswalk
+    description: Cleaned Wynn Rewards identity crosswalk with normalized loyalty card IDs and standardized active flags.
+    columns:
+      - name: loyalty_card_id
+        description: Loyalty card identifier normalized to digits only.
+        data_tests:
+          - unique
+          - not_null
+      - name: loyalty_card_id_raw
+        description: Raw loyalty card identifier as loaded from the source.
+      - name: casino_player_id
+        description: CMS casino player identifier when linked.
+      - name: casino_player_key
+        description: CMS casino player identifier formatted as text for identity joins.
+      - name: pms_guest_id
+        description: Opera PMS guest identifier when linked.
+      - name: tier
+        description: Wynn Rewards tier.
+      - name: tier_credits
+        description: Tier credits earned by the loyalty member.
+      - name: host_id
+        description: Dedicated casino host identifier when assigned.
+      - name: enrolled_date
+        description: Date the loyalty member enrolled.
+      - name: is_active
+        description: Standardized boolean active status.
+
+  - name: stg_wynn_field
+    description: Cleaned field lookup for vertical Wynn raw tables.
+    columns:
+      - name: field_uid
+        description: Field identifier used by the vertical casino and hotel raw tables.
+        data_tests:
+          - unique
+          - not_null
+      - name: field_name
+        description: Business label for the field identifier.
+        data_tests:
+          - not_null
+
+  - name: stg_wynn_dim_subentity
+    description: Cleaned property and source-system dimension with the loaded header row removed.
+    columns:
+      - name: entity_id
+        description: Property and source-system entity identifier.
+        data_tests:
+          - unique
+          - not_null
+      - name: property
+        description: Property name.
+      - name: business_line
+        description: Business line represented by the entity.
+      - name: source_system
+        description: Operational source system for the entity.
+      - name: customer_grain_definition
+        description: Customer grain used by the source system.
+      - name: latency_sla_hrs
+        description: Latency SLA in hours.
+      - name: key_format_note
+        description: Notes about the source system key format.
+
+  - name: stg_wynn_dim_tier
+    description: Cleaned Wynn Rewards tier configuration.
+    columns:
+      - name: tier
+        description: Wynn Rewards tier name.
+        data_tests:
+          - unique
+          - not_null
+      - name: tier_credits_min
+        description: Minimum tier credits required for the tier.
+      - name: dedicated_host
+        description: Whether the tier generally qualifies for a dedicated host.
+      - name: comp_dollars_rate
+        description: Comp dollar earning rate for the tier.
+      - name: freecredit_rate
+        description: Free credit earning rate for the tier.
+
+  - name: stg_wynn_dim_game_type
+    description: Cleaned casino game type reference.
+    columns:
+      - name: game_type
+        description: Casino game type.
+        data_tests:
+          - unique
+          - not_null
+      - name: theo_hold_pct
+        description: Expected theoretical hold percentage.
+      - name: avg_decisions_per_hr
+        description: Average decisions per hour for the game type.
+
+  - name: stg_wynn_dim_host
+    description: Cleaned casino host dimension with the loaded header row removed.
+    columns:
+      - name: host_id
+        description: Casino host identifier.
+        data_tests:
+          - unique
+          - not_null
+      - name: host_name
+        description: Casino host name.
+      - name: host_book_tier
+        description: Tier book covered by the host.
+
+  - name: stg_wynn_dim_player_master
+    description: Cleaned player demographic reference table.
+    columns:
+      - name: player_master_id
+        description: Synthetic player master identifier.
+        data_tests:
+          - unique
+          - not_null
+      - name: first_name
+        description: Player first name.
+      - name: last_name
+        description: Player last name.
+      - name: player_full_name
+        description: Player full name derived from first and last name.
+      - name: home_state
+        description: Player home state.
+      - name: enrolled_year
+        description: Year the player enrolled.
+
+  - name: stg_wynn_resolved_player_worth_answer_key
+    description: Typed resolved-player answer key used for later validation of the Wynn workshop pipeline.
+    columns:
+      - name: resolved_player_id
+        description: Resolved player identifier from the provided answer key.
+        data_tests:
+          - unique
+          - not_null
+      - name: player_full_name
+        description: Player full name.
+      - name: loyalty_card_id
+        description: Normalized loyalty card identifier.
+      - name: casino_player_id
+        description: CMS casino player identifier.
+      - name: pms_guest_id
+        description: Opera PMS guest identifier.
+      - name: tier
+        description: Wynn Rewards tier.
+      - name: tier_credits
+        description: Tier credits earned by the player.
+      - name: dedicated_host_id
+        description: Dedicated casino host identifier when assigned.
+      - name: is_hosted
+        description: Whether a dedicated host is assigned.
+      - name: gaming_theo_win
+        description: Resolved-player gaming theoretical win.
+      - name: gaming_actual_win
+        description: Resolved-player gaming actual win.
+      - name: hotel_ancillary_rev
+        description: Resolved-player hotel and ancillary revenue.
+      - name: comp_dollars_issued
+        description: Comp dollars issued to the player.
+      - name: blended_worth
+        description: Resolved-player blended worth across gaming and hotel.
+      - name: comp_efficiency_ratio
+        description: Comp dollars issued divided by blended worth.
+      - name: floor_vs_pms_worth_gap
+        description: Difference between floor and PMS worth signals.
+      - name: carded_sessions
+        description: Count of carded casino sessions.
+      - name: hotel_stays
+        description: Count of hotel stays.
+      - name: days_since_last_play
+        description: Days since the player's last carded play.
+      - name: reactivation_flag
+        description: Whether the player is a reactivation candidate.
+      - name: high_worth_unhosted_flag
+        description: Whether the player is high worth but unhosted.
+      - name: identity_resolved_from_sources
+        description: Count of source systems contributing to identity resolution.

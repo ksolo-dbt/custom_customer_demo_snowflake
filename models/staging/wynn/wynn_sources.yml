@@ -1,0 +1,235 @@
+version: 2
+
+sources:
+  - name: wynn_raw
+    description: |
+      Raw and reference data for the Wynn Las Vegas player worth proof-of-value demo.
+      The casino and hotel tables arrive as vertical field/value records, while the
+      dimensions and answer key are provided as reference tables for the workshop.
+    database: analytics
+    schema: ksalomon_wynn_demo_raw_data
+    tables:
+      - name: wpv_casino_play_sessions_cms
+        identifier: WPV_CASINO_PLAY_SESSIONS_CMS
+        description: Carded casino floor play from CMS at Wynn Las Vegas and Encore, stored vertically by field.
+        columns:
+          - name: ENTITY_ID
+            description: Property and source-system entity identifier.
+            data_tests:
+              - not_null
+          - name: SOURCE_PLAYER_KEY
+            description: Casino player identifier from CMS.
+            data_tests:
+              - not_null
+          - name: SESSION_OR_FOLIO_ID
+            description: CMS play session identifier.
+            data_tests:
+              - not_null
+          - name: FIELDFID
+            description: Field identifier mapped through wpv_field.
+            data_tests:
+              - not_null
+          - name: VALUE
+            description: Raw field value as loaded from CMS.
+          - name: CREATEDBY
+            description: Source user or process that created the row.
+          - name: CREATEDAT
+            description: Timestamp when the raw CMS field row was created.
+            data_tests:
+              - not_null
+
+      - name: wpv_hotel_ancillary_folios_pms
+        identifier: WPV_HOTEL_ANCILLARY_FOLIOS_PMS
+        description: Opera PMS room folios and ancillary spend records, stored vertically by field.
+        columns:
+          - name: ENTITY_ID
+            description: Property and source-system entity identifier.
+            data_tests:
+              - not_null
+          - name: SOURCE_PLAYER_KEY
+            description: PMS guest identifier.
+            data_tests:
+              - not_null
+          - name: SESSION_OR_FOLIO_ID
+            description: PMS folio identifier when available; POS-only ancillary lines may be missing this value.
+          - name: FIELDFID
+            description: Field identifier mapped through wpv_field.
+            data_tests:
+              - not_null
+          - name: VALUE
+            description: Raw field value as loaded from PMS or ancillary systems.
+          - name: CREATEDBY
+            description: Source user or process that created the row.
+          - name: CREATEDAT
+            description: Timestamp when the raw PMS or ancillary field row was created.
+            data_tests:
+              - not_null
+
+      - name: wpv_loyalty_identity_crosswalk
+        identifier: WPV_LOYALTY_IDENTITY_CROSSWALK
+        description: Wynn Rewards bridge across loyalty card, casino player, and PMS guest identifiers.
+        columns:
+          - name: LOYALTY_CARD_ID
+            description: Raw loyalty card identifier, sometimes formatted with spaces or hyphens.
+            data_tests:
+              - not_null
+          - name: CASINO_PLAYER_ID
+            description: CMS casino player identifier when linked to the loyalty member.
+          - name: PMS_GUEST_ID
+            description: Opera PMS guest identifier when linked to the loyalty member.
+          - name: TIER
+            description: Wynn Rewards tier assigned to the loyalty member.
+          - name: TIER_CREDITS
+            description: Tier credits earned by the loyalty member.
+          - name: HOST_ID
+            description: Dedicated casino host identifier when assigned.
+          - name: ENROLLED_DATE
+            description: Date the loyalty member enrolled.
+          - name: ACTIVE_FLAG
+            description: Free-text active status flag requiring standardization.
+
+      - name: wpv_field
+        identifier: WPV_FIELD
+        description: Lookup table mapping raw field IDs to business field names.
+        columns:
+          - name: FIELD_UID
+            description: Field identifier used by the vertical casino and hotel raw tables.
+            data_tests:
+              - unique
+              - not_null
+          - name: FIELDNAME
+            description: Business label for the field identifier.
+            data_tests:
+              - not_null
+
+      - name: dim_subentity
+        identifier: DIM_SUBENTITY
+        description: Reference dimension describing each property and source-system customer grain.
+        columns:
+          - name: C1
+            description: Entity identifier; first loaded row contains the source header.
+          - name: C2
+            description: Property name; first loaded row contains the source header.
+          - name: C3
+            description: Business line; first loaded row contains the source header.
+          - name: C4
+            description: Source system; first loaded row contains the source header.
+          - name: C5
+            description: Customer grain definition; first loaded row contains the source header.
+          - name: C6
+            description: Latency SLA in hours; first loaded row contains the source header.
+          - name: C7
+            description: Key format note; first loaded row contains the source header.
+
+      - name: dim_tier
+        identifier: DIM_TIER
+        description: Wynn Rewards tier configuration and comp earning rates.
+        columns:
+          - name: TIER
+            description: Wynn Rewards tier name.
+            data_tests:
+              - unique
+              - not_null
+          - name: TIER_CREDITS_MIN
+            description: Minimum tier credits required for the tier.
+          - name: DEDICATED_HOST
+            description: Whether the tier generally qualifies for a dedicated host.
+          - name: COMP_DOLLARS_RATE
+            description: Comp dollar earning rate for the tier.
+          - name: FREECREDIT_RATE
+            description: Free credit earning rate for the tier.
+
+      - name: dim_game_type
+        identifier: DIM_GAME_TYPE
+        description: Game type reference used to validate theoretical hold and decisions per hour.
+        columns:
+          - name: GAME_TYPE
+            description: Casino game type.
+            data_tests:
+              - unique
+              - not_null
+          - name: THEO_HOLD_PCT
+            description: Expected theoretical hold percentage.
+          - name: AVG_DECISIONS_PER_HR
+            description: Average decisions per hour for the game type.
+
+      - name: dim_host
+        identifier: DIM_HOST
+        description: Casino host reference table.
+        columns:
+          - name: C1
+            description: Host identifier; first loaded row contains the source header.
+          - name: C2
+            description: Host name; first loaded row contains the source header.
+          - name: C3
+            description: Host tier book; first loaded row contains the source header.
+
+      - name: dim_player_master
+        identifier: DIM_PLAYER_MASTER
+        description: Player demographic reference table without a unified cross-system key.
+        columns:
+          - name: PLAYER_MASTER_ID
+            description: Synthetic player master identifier.
+            data_tests:
+              - unique
+              - not_null
+          - name: FIRST_NAME
+            description: Player first name.
+          - name: LAST_NAME
+            description: Player last name.
+          - name: HOME_STATE
+            description: Player home state.
+          - name: ENROLLED_YEAR
+            description: Year the player enrolled.
+
+      - name: wpv_resolved_player_worth
+        identifier: WPV_RESOLVED_PLAYER_WORTH
+        description: Provided resolved-player answer key used to validate later workshop transformations.
+        columns:
+          - name: RESOLVED_PLAYER_ID
+            description: Resolved player identifier from the provided answer key.
+            data_tests:
+              - unique
+              - not_null
+          - name: PLAYER_FULL_NAME
+            description: Player full name.
+          - name: LOYALTY_CARD_ID
+            description: Normalized loyalty card identifier.
+          - name: CASINO_PLAYER_ID
+            description: CMS casino player identifier.
+          - name: PMS_GUEST_ID
+            description: Opera PMS guest identifier.
+          - name: TIER
+            description: Wynn Rewards tier.
+          - name: TIER_CREDITS
+            description: Tier credits earned by the player.
+          - name: DEDICATED_HOST_ID
+            description: Dedicated casino host identifier when assigned.
+          - name: IS_HOSTED
+            description: Whether a dedicated host is assigned.
+          - name: GAMING_THEO_WIN
+            description: Resolved-player gaming theoretical win.
+          - name: GAMING_ACTUAL_WIN
+            description: Resolved-player gaming actual win.
+          - name: HOTEL_ANCILLARY_REV
+            description: Resolved-player hotel and ancillary revenue.
+          - name: COMP_DOLLARS_ISSUED
+            description: Comp dollars issued to the player.
+          - name: BLENDED_WORTH
+            description: Resolved-player blended worth across gaming and hotel.
+          - name: COMP_EFFICIENCY_RATIO
+            description: Comp dollars issued divided by blended worth.
+          - name: FLOOR_VS_PMS_WORTH_GAP
+            description: Difference between floor and PMS worth signals.
+          - name: CARDED_SESSIONS
+            description: Count of carded casino sessions.
+          - name: HOTEL_STAYS
+            description: Count of hotel stays.
+          - name: DAYS_SINCE_LAST_PLAY
+            description: Days since the player's last carded play.
+          - name: REACTIVATION_FLAG
+            description: Whether the player is a reactivation candidate.
+          - name: HIGH_WORTH_UNHOSTED_FLAG
+            description: Whether the player is high worth but unhosted.
+          - name: IDENTITY_RESOLVED_FROM_SOURCES
+            description: Count of source systems contributing to identity resolution.
