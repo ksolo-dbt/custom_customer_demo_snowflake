@@ -1,0 +1,100 @@
+version: 2
+
+models:
+  - name: int_wynn_identity_resolution
+    description: |
+      Resolved Wynn demo identity spine. The model anchors on sorted CMS casino
+      player keys, attaches the synthetic player master record, and reconciles
+      loyalty cards from the imperfect Wynn Rewards crosswalk. Crosswalk
+      collisions are preserved as flags so the demo can show where identity
+      rules are explicit, tested, and no longer trapped in tribal knowledge.
+    columns:
+      - name: resolved_player_id
+        description: Synthetic resolved player identifier used across Wynn marts.
+        data_tests:
+          - unique
+          - not_null
+      - name: player_master_id
+        description: Synthetic demographic player identifier.
+      - name: player_full_name
+        description: Player name from the synthetic player master reference.
+      - name: loyalty_card_id
+        description: Normalized Wynn Rewards card identifier when reconciled.
+      - name: casino_player_id
+        description: Numeric CMS casino player identifier.
+        data_tests:
+          - not_null
+      - name: pms_guest_id
+        description: Opera PMS guest identifier when the bridge can resolve it.
+      - name: tier
+        description: Wynn Rewards tier from the reconciled loyalty record.
+      - name: dedicated_host_id
+        description: Assigned casino host identifier when present.
+      - name: has_casino_key_collision
+        description: Flags loyalty cards that were part of a casino-key collision in the source crosswalk.
+      - name: identity_resolved_from_sources
+        description: Count of source identity systems represented by the resolved player.
+      - name: has_loyalty_identity
+        description: Whether the player has a reconciled Wynn Rewards loyalty card.
+      - name: has_casino_identity
+        description: Whether the player has a CMS casino player key.
+      - name: has_pms_identity
+        description: Whether the player has an Opera PMS guest key.
+
+  - name: int_wynn_casino_sessions_enriched
+    description: |
+      Casino session lane enriched with resolved identity, property metadata,
+      game-type reference data, Baccarat-Hi recode impact flags, and build-time
+      data-quality flags for impossible November sessions.
+    columns:
+      - name: resolved_player_id
+        description: Resolved player identifier for the session.
+        data_tests:
+          - not_null
+      - name: session_id
+        description: CMS play session identifier.
+        data_tests:
+          - not_null
+      - name: session_date
+        description: Date of carded play.
+        data_tests:
+          - not_null
+      - name: source_game_type
+        description: Game type label exactly as submitted by CMS.
+      - name: normalized_game_type
+        description: Game type after normalizing pre-2026 Baccarat-Hi into Baccarat.
+      - name: is_baccarat_hi_recode
+        description: Whether this session is affected by the pre-2026 Baccarat-Hi source-definition change.
+      - name: gaming_theo_win
+        description: Session theoretical win as submitted by CMS.
+      - name: time_on_device_min
+        description: Minutes on device or table for the session.
+      - name: is_quality_flagged_session
+        description: Flags sessions with impossible time-on-device or negative theoretical win.
+
+  - name: int_wynn_hotel_folios_enriched
+    description: |
+      Hotel and ancillary folio lane enriched with resolved identity and property
+      metadata. POS-only rows with no folio are retained and flagged rather than
+      silently dropped, making the handling visible to analysts and LLM consumers.
+    columns:
+      - name: resolved_player_id
+        description: Resolved player identifier for the folio when the PMS or loyalty key can be reconciled.
+      - name: pms_guest_id
+        description: Source PMS guest identifier or loyalty-card-like POS key.
+        data_tests:
+          - not_null
+      - name: folio_reference
+        description: Stable folio reference used for trip assembly.
+        data_tests:
+          - not_null
+      - name: stay_arrival_date
+        description: Arrival date for the stay or folio when supplied by the source.
+      - name: hotel_ancillary_rev
+        description: Total room, food and beverage, retail, spa, and show revenue for the folio.
+      - name: comp_dollars_issued
+        description: Comp dollars issued against the folio.
+      - name: is_no_folio_reference
+        description: Whether the raw PMS/POS line lacked a folio identifier.
+      - name: is_unresolved_hotel_key
+        description: Whether the PMS/POS key could not be reconciled to a resolved player.

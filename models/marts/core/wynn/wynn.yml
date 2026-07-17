@@ -1,0 +1,361 @@
+version: 2
+
+models:
+  - name: fct_wynn_player_trips
+    description: >
+      Trip-grain Wynn demo fact table with one row per resolved player and trip start date.
+      The model blends carded casino sessions with hotel folio activity after synthetic identity
+      resolution, so worth metrics are directional demo measures rather than production finance
+      definitions.
+    semantic_model:
+      enabled: true
+    agg_time_dimension: trip_start_date
+    columns:
+      - name: player_trip_id
+        description: Synthetic trip identifier built from resolved_player_id and trip_start_date; primary key for this mart.
+        entity:
+          type: primary
+          name: player_trip
+        data_tests:
+          - not_null
+          - unique
+      - name: resolved_player_id
+        description: Identity-resolved player key shared across loyalty, casino, and PMS records.
+        entity:
+          type: foreign
+          name: resolved_player
+        data_tests:
+          - not_null
+      - name: trip_start_date
+        description: First casino session date or hotel stay arrival date represented by the trip row.
+        granularity: day
+        dimension:
+          type: time
+        data_tests:
+          - not_null
+      - name: trip_end_date
+        description: Latest casino or hotel activity date covered by the trip row.
+        granularity: day
+        dimension:
+          type: time
+      - name: property
+        description: Wynn property associated with the rolled-up casino session or hotel stay.
+        dimension:
+          type: categorical
+      - name: carded_sessions
+        description: Count of carded casino sessions linked to the resolved player on the trip date.
+      - name: distinct_casino_sessions
+        description: Distinct source casino session count used to monitor source-session duplication.
+      - name: gaming_theo_win
+        description: Total theoretical gaming win for carded casino sessions in the trip.
+      - name: gaming_actual_win
+        description: Total actual gaming win for carded casino sessions in the trip.
+      - name: avg_bet_total
+        description: Sum of average bet values across carded sessions; retained for demo ranking and comparison.
+      - name: time_on_device_min
+        description: Total minutes played on gaming devices across carded sessions.
+      - name: quality_flagged_sessions
+        description: Count of source casino sessions flagged by demo quality rules.
+      - name: baccarat_hi_recode_sessions
+        description: Count of baccarat sessions affected by the demo high-limit recode rule.
+      - name: hotel_stays
+        description: Count of hotel folio stay records linked to the resolved player on the trip date.
+      - name: distinct_folio_references
+        description: Distinct hotel folio references represented in the trip.
+      - name: room_revenue
+        description: Room revenue from linked hotel folios.
+      - name: fnb_revenue
+        description: Food and beverage revenue from linked hotel folios.
+      - name: retail_revenue
+        description: Retail revenue from linked hotel folios.
+      - name: spa_revenue
+        description: Spa revenue from linked hotel folios.
+      - name: show_revenue
+        description: Entertainment and show revenue from linked hotel folios.
+      - name: hotel_ancillary_rev
+        description: Total room, food and beverage, retail, spa, and show revenue used in blended worth.
+      - name: comp_dollars_issued
+        description: Total comp dollars issued on linked hotel folios.
+      - name: no_folio_references
+        description: Count of hotel stays missing a folio reference; useful for data-quality demos.
+      - name: blended_worth
+        description: >
+          Demo-specific estimated player worth, calculated as 50% of gaming theoretical win plus
+          35% of hotel ancillary revenue. This is synthetic and not a production customer worth rule.
+    metrics:
+      - name: trip_count
+        description: Count of distinct resolved player trips.
+        type: simple
+        label: Trip Count
+        agg: count_distinct
+        expr: player_trip_id
+      - name: trip_blended_worth
+        description: Total demo blended worth across trips.
+        type: simple
+        label: Trip Blended Worth
+        agg: sum
+        expr: blended_worth
+      - name: trip_gaming_theo_win
+        description: Total theoretical gaming win across trips.
+        type: simple
+        label: Trip Gaming Theo Win
+        agg: sum
+        expr: gaming_theo_win
+      - name: trip_hotel_ancillary_revenue
+        description: Total hotel ancillary revenue across trips.
+        type: simple
+        label: Trip Hotel Ancillary Revenue
+        agg: sum
+        expr: hotel_ancillary_rev
+      - name: trip_comp_dollars_issued
+        description: Total comp dollars issued across trips.
+        type: simple
+        label: Trip Comp Dollars Issued
+        agg: sum
+        expr: comp_dollars_issued
+      - name: trip_carded_sessions
+        description: Total carded casino sessions across trips.
+        type: simple
+        label: Trip Carded Sessions
+        agg: sum
+        expr: carded_sessions
+      - name: trip_hotel_stays
+        description: Total hotel stays across trips.
+        type: simple
+        label: Trip Hotel Stays
+        agg: sum
+        expr: hotel_stays
+      - name: trip_quality_flagged_sessions
+        description: Total quality-flagged casino sessions across trips.
+        type: simple
+        label: Trip Quality Flagged Sessions
+        agg: sum
+        expr: quality_flagged_sessions
+      - name: trip_no_folio_references
+        description: Total hotel stay rows without folio references across trips.
+        type: simple
+        label: Trip No Folio References
+        agg: sum
+        expr: no_folio_references
+
+  - name: mart_wynn_resolved_player_worth
+    description: >
+      Resolved-player-grain Wynn demo mart summarizing casino, hotel, comp, host, and identity
+      quality signals. The model intentionally combines synthetic source systems to demonstrate
+      entity resolution, player worth, host coverage gaps, and reactivation opportunities.
+    semantic_model:
+      enabled: true
+    agg_time_dimension: last_trip_date
+    columns:
+      - name: resolved_player_id
+        description: Primary identity-resolved player key across loyalty, casino, and PMS source records.
+        entity:
+          type: primary
+          name: resolved_player
+        data_tests:
+          - not_null
+          - unique
+      - name: player_master_id
+        description: Loyalty player master identifier when present in the synthetic loyalty source.
+      - name: player_full_name
+        description: Player full name from the resolved identity record; included for demo exploration.
+      - name: home_state
+        description: Player home state from the resolved identity record.
+        dimension:
+          type: categorical
+      - name: loyalty_card_id
+        description: Loyalty card identifier contributing to identity resolution.
+      - name: casino_player_id
+        description: Casino player identifier contributing to identity resolution.
+      - name: pms_guest_id
+        description: PMS guest identifier contributing to identity resolution.
+      - name: tier
+        description: Loyalty tier assigned to the resolved player.
+        dimension:
+          type: categorical
+      - name: tier_credits
+        description: Loyalty tier credits associated with the resolved player.
+      - name: dedicated_host_id
+        description: Host identifier assigned to the player, when present.
+      - name: host_name
+        description: Dedicated host name for hosted players.
+        dimension:
+          type: categorical
+      - name: host_book_tier
+        description: Host book segment used for demo host coverage analysis.
+        dimension:
+          type: categorical
+      - name: is_hosted
+        description: Boolean flag indicating whether the resolved player has a dedicated host assignment.
+        dimension:
+          type: categorical
+      - name: enrolled_date
+        description: Date the player enrolled in the loyalty program.
+        granularity: day
+        dimension:
+          type: time
+      - name: is_active
+        description: Source active-status flag for the resolved player identity.
+        dimension:
+          type: categorical
+      - name: has_casino_key_collision
+        description: Boolean data-quality flag indicating a casino key collision during identity resolution.
+        dimension:
+          type: categorical
+      - name: identity_resolved_from_sources
+        description: Count of synthetic identity sources contributing to the resolved player.
+        dimension:
+          type: categorical
+      - name: has_loyalty_identity
+        description: Boolean flag indicating the resolved player has a loyalty identity component.
+        dimension:
+          type: categorical
+      - name: has_casino_identity
+        description: Boolean flag indicating the resolved player has a casino identity component.
+        dimension:
+          type: categorical
+      - name: has_pms_identity
+        description: Boolean flag indicating the resolved player has a PMS identity component.
+        dimension:
+          type: categorical
+      - name: gaming_theo_win
+        description: Lifetime theoretical gaming win summarized from resolved player trips.
+      - name: gaming_actual_win
+        description: Lifetime actual gaming win summarized from resolved player trips.
+      - name: hotel_ancillary_rev
+        description: Lifetime hotel ancillary revenue summarized from resolved player trips.
+      - name: comp_dollars_issued
+        description: Lifetime comp dollars issued summarized from resolved player trips.
+      - name: blended_worth
+        description: >
+          Lifetime demo blended worth, calculated upstream as 50% of gaming theoretical win plus
+          35% of hotel ancillary revenue.
+      - name: comp_efficiency_ratio
+        description: Ratio of comp dollars issued to blended worth, averaged by the semantic metric for rollups.
+      - name: floor_vs_pms_worth_gap
+        description: Difference between gaming theoretical win and hotel ancillary revenue for floor-versus-PMS demos.
+      - name: carded_sessions
+        description: Lifetime count of carded casino sessions linked to the resolved player.
+      - name: hotel_stays
+        description: Lifetime count of hotel stays linked to the resolved player.
+      - name: trips
+        description: Count of distinct player trips linked to the resolved player.
+      - name: days_since_last_play
+        description: Number of days since the player's most recent casino play date.
+      - name: last_trip_date
+        description: Most recent trip date for the resolved player.
+        granularity: day
+        dimension:
+          type: time
+      - name: last_play_date
+        description: Most recent casino play date for the resolved player.
+        granularity: day
+        dimension:
+          type: time
+      - name: quality_flagged_sessions
+        description: Lifetime count of quality-flagged casino sessions.
+      - name: no_folio_references
+        description: Lifetime count of hotel stays missing a folio reference.
+      - name: baccarat_hi_recode_sessions
+        description: Lifetime count of baccarat sessions affected by the demo high-limit recode rule.
+      - name: baccarat_hi_recode_theo_win
+        description: Theoretical gaming win from baccarat sessions affected by the demo high-limit recode rule.
+      - name: high_worth_unhosted_flag
+        description: Boolean flag for players with blended worth of at least 50,000 and no dedicated host.
+        dimension:
+          type: categorical
+      - name: reactivation_flag
+        description: Boolean flag for high-worth players whose last casino play was more than 90 days ago.
+        dimension:
+          type: categorical
+    metrics:
+      - name: resolved_players
+        description: Count of distinct resolved players.
+        type: simple
+        label: Resolved Players
+        agg: count_distinct
+        expr: resolved_player_id
+      - name: blended_worth
+        description: Total demo blended worth across resolved players.
+        type: simple
+        label: Blended Worth
+        agg: sum
+        expr: blended_worth
+      - name: gaming_theo_win
+        description: Total theoretical gaming win across resolved players.
+        type: simple
+        label: Gaming Theo Win
+        agg: sum
+        expr: gaming_theo_win
+      - name: gaming_actual_win
+        description: Total actual gaming win across resolved players.
+        type: simple
+        label: Gaming Actual Win
+        agg: sum
+        expr: gaming_actual_win
+      - name: hotel_ancillary_revenue
+        description: Total hotel ancillary revenue across resolved players.
+        type: simple
+        label: Hotel Ancillary Revenue
+        agg: sum
+        expr: hotel_ancillary_rev
+      - name: comp_dollars_issued
+        description: Total comp dollars issued across resolved players.
+        type: simple
+        label: Comp Dollars Issued
+        agg: sum
+        expr: comp_dollars_issued
+      - name: comp_efficiency_ratio
+        description: Average comp efficiency ratio across resolved players.
+        type: simple
+        label: Comp Efficiency Ratio
+        agg: average
+        expr: comp_efficiency_ratio
+      - name: carded_sessions
+        description: Total carded casino sessions across resolved players.
+        type: simple
+        label: Carded Sessions
+        agg: sum
+        expr: carded_sessions
+      - name: hotel_stays
+        description: Total hotel stays across resolved players.
+        type: simple
+        label: Hotel Stays
+        agg: sum
+        expr: hotel_stays
+      - name: hosted_players
+        description: Count of resolved players with a dedicated host.
+        type: simple
+        label: Hosted Players
+        agg: sum_boolean
+        expr: is_hosted
+      - name: high_worth_unhosted_players
+        description: Count of high-worth resolved players without a dedicated host.
+        type: simple
+        label: High Worth Unhosted Players
+        agg: sum_boolean
+        expr: high_worth_unhosted_flag
+      - name: reactivation_candidates
+        description: Count of high-worth resolved players whose last casino play was more than 90 days ago.
+        type: simple
+        label: Reactivation Candidates
+        agg: sum_boolean
+        expr: reactivation_flag
+      - name: baccarat_hi_recode_theo_win
+        description: Total theoretical win from baccarat sessions affected by the demo high-limit recode rule.
+        type: simple
+        label: Baccarat HI Recode Theo Win
+        agg: sum
+        expr: baccarat_hi_recode_theo_win
+      - name: quality_flagged_sessions
+        description: Total quality-flagged casino sessions across resolved players.
+        type: simple
+        label: Quality Flagged Sessions
+        agg: sum
+        expr: quality_flagged_sessions
+      - name: no_folio_references
+        description: Total hotel stay rows without folio references across resolved players.
+        type: simple
+        label: No Folio References
+        agg: sum
+        expr: no_folio_references
