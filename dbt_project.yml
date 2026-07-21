@@ -15,6 +15,10 @@ snapshot-paths: ["snapshots"]
 seed-paths: ["seeds"]
 analysis-paths: ["analyses"]
 
+models:
+  custom_customer_demo_snowflake:
+    +static_analysis: strict
+
 clean-targets:
   - "target"
   - "dbt_packages"
